@@ -34,4 +34,4 @@ This module was originally based on NextGenWeb's whmcs-stripe module, however af
 
 ## Support Information
 
-I'm always looking to improve this code, so if you see something that can be changed or if you have an idea for a new feature or any other feedback, send me an email to `support *at* next gen web media dot com`, or send me a message on Twitter (`@grantdtech`), and I'll get right back to you. If you decide to use this module in your WHMCS install, send me a message to say hello (and let me know what you think too) and it'll make my day. Thanks!
+I'm always looking to improve this code, so if you see something that can be changed or if you have an idea for a new feature or any other feedback, send me an email to `support@connexin.co.uk`, or send me a message on Twitter (`@lukefromengland`), and I'll get right back to you. If you decide to use this module in your WHMCS install, send me a message to say hello (and let me know what you think too) and it'll make my day. Thanks!
