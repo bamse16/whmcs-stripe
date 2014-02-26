@@ -7,7 +7,7 @@ This is a free and open source Stripe Payment Gateway for WHMCS that supports on
 
 This gateway allows the [WHMCS](http://www.whmcs.com) billing system to use [Stripe's](https://www.stripe.com) one time payment gateway capabilities. [Stripe](https://www.stripe.com) provides the unique ability to take a client's credit card information without ever having the client leave your site, but it also allows for credit card data to never get stored in or even pass through your own server, eliminating costly concerns over PCI compliance. This gateway for WHMCS is being released free for anyone, although it should still be considered in beta as there are likely still bugs to work out of it.
 
-This module makes use of Stripe Checkout and as such
+This module makes use of Stripe Checkout and as such requires the Checkout.js library and doesn't involve and PCI compliance from your side!
 
 ## Instructions For Use
 
