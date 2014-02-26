@@ -38,11 +38,30 @@ function stripe_link($params) {
     } else {
 	    $warning = "false";
     }
+    
+    $amount = $amount * 100;
 
 	# Enter your code submit to the gateway...
+	
+	$code = '<form action="stripe-pay.php?invoiceid='. $params['invoiceid']  .'&amount=' . $params['amount'] . '" method="POST">
+			  <script
+			    src="https://checkout.stripe.com/checkout.js" class="stripe-button"
+			    data-key="PUBLIC KEY HERE"
+			    data-image="YOUR IMAGE HERE"
+			    data-name="YOUR COMPANY NAME"
+			    data-description="Invoice #' . $params['invoiceid'] . '"
+			    data-amount='.$amount.'
+			    data-email="' . $params['clientdetails']['email'] . '"
+			    data-currency="gbp">
+			  </script>
+			</form>
+	
+	';
+	
+	/*
 	$code = '<form method="post" action="ccpay.php">
 			<input type="hidden" name="description" value="'.$description.'" />
-			<input type="hidden" name="invoiceid" value="'.$invoiceid.'" />
+			<input type="hidden" name="invoiceid" value="'.$invoiceid.'" />1
 			<input type="hidden" name="amount" value="'.$amount.'" />
 			<input type="hidden" name="frominvoice" value="true" />
 			<input type="hidden" name="payfreq" value="otp" />
@@ -50,6 +69,7 @@ function stripe_link($params) {
 			<input type="submit" value="'.$wording.'" />
 			</form>';
 			
+	*/
 	if ($relid != 0 || $relid != "") {
 	$code .= '<form method="post" action="ccpay.php">
 			<input type="hidden" name="description" value="'.$description.'" />
