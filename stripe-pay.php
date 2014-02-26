@@ -17,7 +17,7 @@
 	$amountPence = $amountPounds / 100;
 	
 	// Calculate the fee
-	$fee = (($amountPence * 1.024) * 0.2 ) - $amountPounds;
+	$fee = ($amountPence * 2.4) + 0.2;
 	
 	$fee = round($fee, 2);
 	
