@@ -14,7 +14,7 @@
 	$invoiceID = (int) $_GET['invoiceid'];
 	$amountPounds = (int) $_GET['amount'];
 	
-	$amountPence = $amountPounds / 100;
+	$amountPence = $amountPounds * 100;
 	
 	// Calculate the fee
 	$fee = ($amountPence * 2.4) + 0.2;
@@ -26,16 +26,13 @@
 	
 	// Description (THIS FORMAT IS REQUIRED!!!!)
 	$description = "Invoice #" . $invoiceID . " - " . $_POST['stripeEmail'] . "";
-	
-	// Put the correct amount in
-	$amount = $_GET['amount'] * 100;
 
 	// Do the charge
 	try { 
 	
 	$cardCharge = Stripe_Charge::create(array(
 	  "card" => $_POST['stripeToken'],
-	  "amount" => $amount,
+	  "amount" => $amountPence,
 	  "currency" => "gbp", // Change this to a currency of your choice if you aren't from the UK
 	  "description" => $description));
 	  
