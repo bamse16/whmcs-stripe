@@ -8,13 +8,13 @@ function stripe_config() {
      "public_test_key" => array("FriendlyName" => "Test Publishable Key", "Type" => "text", "Size" => "20", "Description" => "Available from Stripe's website at <a href='https://manage.stripe.com/account/apikeys' title='Stripe API Keys'>this link</a>.", ),
 	 "private_test_key" => array("FriendlyName" => "Test Secret Key", "Type" => "text", "Size" => "20", "Description" => "Available from Stripe's website at <a href='https://manage.stripe.com/account/apikeys' title='Stripe API Keys'>this link</a>." , ),
 	 "problememail" => array("FriendlyName" => "Problem Report Email", "Type" => "text", "Size" => "20", "Description" => "Enter an email that the gateway can send a message to should an alert or other serious processing problem arise.", ),
+     "company_logo" => array("FriendlyName" => "Company Logo", "Type" => "text", "Size" => "20", "Description" => "A link to your company logo URL. Square image, with min size 128x128px.", ),
      "testmode" => array("FriendlyName" => "Test Mode", "Type" => "yesno", "Description" => "Tick this to make all transactions use your test keys above.", ),
     );
 	return $configarray;
 }
 
 function stripe_link($params) {
-
 	# Invoice Variables
 	$invoiceid = $params['invoiceid'];
 	$description = $params["description"];
@@ -41,21 +41,27 @@ function stripe_link($params) {
     
     $amount = $amount * 100;
 
+	$public_key = $params['public_live_key'];
+	if($params['testmode'] && $params['testmode'] == 'on'){
+		$public_key = $params['public_test_key'];
+	}
+
 	# Enter your code submit to the gateway...
+
+	$callbackUrl = 'stripe-pay.php?invoiceid='.$params['invoiceid'].'&amount='.$params['amount'];
 	
-	$code = '<form action="stripe-pay.php?invoiceid='. $params['invoiceid']  .'&amount=' . $params['amount'] . '" method="POST">
+	$code = '<form action="'.$callbackUrl.'" method="POST">
 			  <script
 			    src="https://checkout.stripe.com/checkout.js" class="stripe-button"
-			    data-key="PUBLIC KEY HERE"
-			    data-image="YOUR IMAGE HERE"
-			    data-name="YOUR COMPANY NAME"
+			    data-key="'.$public_key.'"
+			    data-image="'.$params['company_logo'].'"
+			    data-name="'.$params['companyname'].'"
 			    data-description="Invoice #' . $params['invoiceid'] . '"
 			    data-amount='.$amount.'
 			    data-email="' . $params['clientdetails']['email'] . '"
-			    data-currency="gbp">
+			    data-currency="'. $params['currency'].'">
 			  </script>
 			</form>
-	
 	';
 	
 	/*
