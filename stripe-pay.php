@@ -69,7 +69,8 @@
 					"cardtype" => $cardType,
 					"cardnum" => '',
 					"gatewayid" =>$_POST['stripeToken'],
-					"cardlastfour" => $cardLastFour
+					"cardlastfour" => $cardLastFour,
+					"defaultgateway" => $GATEWAY["name"]
 					);
 
 			update_query("tblclients", $storeCardToken, array("id" => $userid));
