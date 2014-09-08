@@ -45,7 +45,35 @@
 					"amount" => $amountPence,
 					"currency" => $currency,
 					"description" => $description));
-	  
+
+		// Great! It was a glowing success! Now, let's add the charge to the invoice and be done with it!
+		$cardResponse = json_decode($cardCharge, true);
+
+		$cardType = '';
+		$cardLastFour = '';
+		if($cardResponse && $cardResponse['card']){
+			if($cardResponse['card']['brand']){
+				$cardType = $cardResponse['card']['brand'];
+			}
+
+			if($cardResponse['card']['last4']){
+				$cardLastFour = $cardResponse['card']['last4'];
+			}
+		}
+
+		// Store token as gatewayid, so recurring charges can be made by whmcs
+		if($GATEWAY['clientdetails'] && $GATEWAY['clientdetails']['userid']){
+			$userid = $GATEWAY['clientdetails']['userid'];
+
+			$storeCardToken = array(
+					"cardtype" => $cardType,
+					"cardnum" => '',
+					"gatewayid" =>$_POST['stripeToken'],
+					"cardlastfour" => $cardLastFour
+					);
+
+			update_query("tblclients", $storeCardToken, array("id" => $userid));
+		}
 	} catch(Stripe_CardError $event) {
 
 		// The card has been declined
@@ -55,9 +83,6 @@
 		die();
 	}
 
-	// Great! It was a glowing success! Now, let's add the charge to the invoice and be done with it!
-	$cardResponse = json_decode($cardCharge, true);
-	
 	// Mark as paid on WHMCS 
 	addInvoicePayment($invoiceID,$cardResponse['id'],$amountPounds,$fee,$gatewaymodule); # Apply Payment to Invoice: invoiceid, transactionid, amount paid, fees, modulename
 	logTransaction("Stripe",$cardResponse,"Successful");
