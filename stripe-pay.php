@@ -1,4 +1,5 @@
 <?php
+
 	$gatewaymodule = "stripe";
 	// Grab the WHMCS stuff
 	
@@ -38,10 +39,25 @@
 	// Description (THIS FORMAT IS REQUIRED!!!!)
 	$description = "Invoice #" . $invoiceID . " - " . $_POST['stripeEmail'] . "";
 
-	// Do the charge
-	try { 
+	$customer = sprintf('Customer for Invoice #%d', $invoiceID);
+	$email = '';
+	if($GATEWAY['clientdetails']){
+		$email = $GATEWAY['clientdetails']['email'];
+		$customer = sprintf('%s <%s>', $GATEWAY['clientdetails']['fullname'], $email);
+	}
+
+	// Create a customer, then Do the charge
+	try {
+		$createCustomer = Stripe_Customer::create(array(
+			"description" => $customer,
+			"email" => $email,
+			"card" => $_POST['stripeToken']
+			)); 
+		
+		$customerResponse = json_decode($createCustomer, true);
+
 		$cardCharge = Stripe_Charge::create(array(
-					"card" => $_POST['stripeToken'],
+					"customer" => $customerResponse['id'],
 					"amount" => $amountPence,
 					"currency" => $currency,
 					"description" => $description));
@@ -61,23 +77,29 @@
 			}
 		}
 
-		// Store token as gatewayid, so recurring charges can be made by whmcs
 		if($GATEWAY['clientdetails'] && $GATEWAY['clientdetails']['userid']){
 			$userid = $GATEWAY['clientdetails']['userid'];
 
+			// WHMCS needs a token that can be use for further charges
+			// for Stripe, we store a customer id and use this as token for further charges
 			$storeCardToken = array(
 					"cardtype" => $cardType,
 					"cardnum" => '',
-					"gatewayid" =>$_POST['stripeToken'],
-					"cardlastfour" => $cardLastFour,
-					"defaultgateway" => $GATEWAY["name"]
+					"gatewayid" =>$customerResponse['id'],
+					"cardlastfour" => $cardLastFour
 					);
 
 			update_query("tblclients", $storeCardToken, array("id" => $userid));
 		}
+
 	} catch(Stripe_CardError $event) {
 
 		// The card has been declined
+		logTransaction($GATEWAY["name"],$event,"Unsuccessful"); # Save to Gateway Log: name, data array, status
+		header("Location: ".$GATEWAY["systemurl"]."/viewinvoice.php?id=" . $_GET['invoiceid'] . "&paymentstatus=failure");
+
+		die();
+	} catch(Exception $event) {
 		logTransaction($GATEWAY["name"],$event,"Unsuccessful"); # Save to Gateway Log: name, data array, status
 		header("Location: ".$GATEWAY["systemurl"]."/viewinvoice.php?id=" . $_GET['invoiceid'] . "&paymentstatus=failure");
 

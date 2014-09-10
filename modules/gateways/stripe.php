@@ -1,5 +1,9 @@
 <?php
 
+if (!defined("WHMCS")) {
+	exit("This file cannot be accessed directly");
+}
+
 function stripe_config() {
     $configarray = array(
      "FriendlyName" => array("Type" => "System", "Value"=>"Stripe"),
@@ -97,7 +101,7 @@ function stripe_link($params) {
 
 function stripe_refund($params) {
 
-	require_once('stripe/Stripe.php');
+	require_once('Stripe/Stripe.php');
 	
 	$gatewaytestmode = $params["testmode"];
 	
@@ -119,7 +123,38 @@ function stripe_refund($params) {
 		$response['error'] = $e->getMessage();
 		return array("status"=>"error","rawdata"=>$response['error']);
 	}
+}
 
+function stripe_capture($params){
+	require_once('Stripe/Stripe.php');
+
+	$gatewaytestmode = $params["testmode"];
+	
+	if ($gatewaytestmode == "on") {
+		Stripe::setApiKey($params['private_test_key']);
+	} else {
+		Stripe::setApiKey($params['private_live_key']);
+	}
+
+	$amountPence = 100 * $params['amount'];
+
+	try {
+		$cardCharge = Stripe_Charge::create(array(
+			"amount" => $amountPence,
+			"currency" => $params['currency'],
+			"customer" => $params['gatewayid'],
+			"description" => $params['description']
+		));
+		$cardResponse = json_decode($cardCharge, true);
+	} catch (Exception $event) {
+		logTransaction($GATEWAY["name"],$event,"Unsuccessful"); # Save to Gateway Log: name, data array, status
+		return array("status"=>"failed", "rawdata"=>$event);
+	}
+
+	addInvoicePayment($invoiceID,$cardResponse['id'],$amountPounds,$fee,$gatewaymodule); # Apply Payment to Invoice: invoiceid, transactionid, amount paid, fees, modulename
+	logTransaction("Stripe",$cardResponse,"Successful");
+
+	return array("status"=>"success","transid"=>$cardResponse["id"],"rawdata"=>$cardResponse);
 }
 
 ?>
