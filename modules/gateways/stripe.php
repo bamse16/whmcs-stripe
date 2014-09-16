@@ -138,6 +138,11 @@ function stripe_capture($params){
 
 	$amountPence = 100 * $params['amount'];
 
+	if(!$params['gatewayid'] || trim($params['gatewayid']) == ''){
+		logTransaction('Stripe', "No credit card on file", "Unsuccessful"); # Save to Gateway Log: name, data array, status
+		return array("status"=>"failed", "rawdata"=>"No credit card on file");
+	}
+
 	try {
 		$cardCharge = Stripe_Charge::create(array(
 			"amount" => $amountPence,
@@ -147,7 +152,7 @@ function stripe_capture($params){
 		));
 		$cardResponse = json_decode($cardCharge, true);
 	} catch (Exception $event) {
-		logTransaction($GATEWAY["name"],$event,"Unsuccessful"); # Save to Gateway Log: name, data array, status
+		logTransaction('Stripe',$event,"Unsuccessful"); # Save to Gateway Log: name, data array, status
 		return array("status"=>"failed", "rawdata"=>$event);
 	}
 
