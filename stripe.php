@@ -1,115 +1,103 @@
 <?php
+    $gatewaymodule = "stripe";
+    // Grab the WHMCS stuff
 
-	$gatewaymodule = "stripe";
-	// Grab the WHMCS stuff
+    include("dbconnect.php");
+    include("includes/functions.php");
+    include("includes/gatewayfunctions.php");
+    include("includes/invoicefunctions.php");
+
+    $invoiceID = (int) $_GET['invoice_id'];
+    $GATEWAY = getGatewayVariables($gatewaymodule, $invoiceID);
+    if (!$GATEWAY["type"]) {
+        die("Module Not Activated");
+    }
+
+    // This will stop the processing if the invoice id is invalid
+    $invoiceID = checkCbInvoiceID($invoiceID, $GATEWAY['name']);
+
+    // Bring in Stripe
+    include('stripe/init.php');
+
+    // Little bit of sanitization
+    $amount = $GATEWAY['amount'];
+    $currency = $GATEWAY['currency'];
+    $amountCents = $amount * 100;
+    $fee = 0;
+    
+    $secretKey = $GATEWAY['private_live_key'];
+    if ($GATEWAY['testmode'] == 'on') {
+        $secretKey = $GATEWAY['private_test_key'];
+    }
+    
+    $token = trim($_POST['stripeToken']);
+
+    // Set API key
+    \Stripe\Stripe::setApiKey($secretKey);
+
+    // Description (THIS FORMAT IS REQUIRED!!!!)
+    $description = "Invoice #{$invoiceID} - " . $GATEWAY['clientdetails']['email'] . ".";
+
+    $customer = sprintf('Customer for Invoice #%d', $invoiceID);
+    $email = '';
+    if($GATEWAY['clientdetails']){
+        $email = $GATEWAY['clientdetails']['email'];
+        $customer = sprintf('%s <%s>', $GATEWAY['clientdetails']['fullname'], $email);
+    }
+
+    // Create a customer, then Do the charge
+    try {
+	    $createCustomer = array(
+            "description" => $customer,
+            "email" => $email,
+            "source" => $token
+        );
+        $customerResponse = \Stripe\Customer::create($createCustomer);
+
+		$cardItem = array(
+	        "customer" => $customerResponse->id,
+	        "amount" => $amountCents,
+	        "currency" => $currency,
+	        "description" => $description
+        );
+        $cardResponse = \Stripe\Charge::create($cardItem);
+        
+        // Add the charge to the invoice
+        $card = $cardResponse->source;
+
+        $cardType = $card->brand;
+        $cardLastFour = $card->last4;
+        $cardExp = sprintf("%02d/%d", $card->exp_month, $card->exp_year);
+
+        if($GATEWAY['clientdetails'] && $GATEWAY['clientdetails']['userid']){
+            $userid = $GATEWAY['clientdetails']['userid'];
+
+            // WHMCS needs a token that can be use for further charges
+            // for Stripe, we store a customer id and use this as token for further charges
+            $storeCardToken = array(
+	            "cardtype" => $cardType,
+	            "gatewayid" => $customerResponse->id,
+	            "cardlastfour" => $cardLastFour,
+	            "expdate" => $cardExp
+            );
+            update_query("tblclients", $storeCardToken, array("id" => $userid));
+        }
+    } catch(\Stripe\Error\Card $event) {
+        // The card has been declined
+        logTransaction($GATEWAY["name"], $event, "Unsuccessful");
+        header("Location: ".$GATEWAY["systemurl"]."/viewinvoice.php?id={$invoiceID}&paymentstatus=failure");
+        die();
+    } catch(Exception $event) {
+        logTransaction($GATEWAY["name"], $event, "Unsuccessful");
+        header("Location: ".$GATEWAY["systemurl"]."/viewinvoice.php?id={invoiceID}&paymentstatus=failure");
+        die();
+    }
 	
-	include("dbconnect.php");
-	include("includes/functions.php");
-	include("includes/gatewayfunctions.php");
-	include("includes/invoicefunctions.php");
+    // Mark as paid on WHMCS
+    addInvoicePayment($invoiceID, $cardResponse->id, $amount, $fee, $GATEWAY["name"]);
+    logTransaction($GATEWAY["name"], $cardResponse, "Successful");
 
-	$invoiceID = (int) $_GET['invoiceid'];
-	$GATEWAY = getGatewayVariables($gatewaymodule, $invoiceID);
-	if (!$GATEWAY["type"]) {
-		die("Module Not Activated"); 
-	}
-	
-	// This will stop the processing if the invoice id is invalid
-	$invoiceID = checkCbInvoiceID($invoiceID, $GATEWAY['name']);
-
-	// Bring in Stripe
-	include('stripe/lib/Stripe.php');
-	
-	// Little bit of sanitization
-	$amountPounds = $GATEWAY['amount'];
-	$currency = $GATEWAY['currency'];
-
-	$amountPence = $amountPounds * 100;
-
-	$secret_key = '';
-	if($GATEWAY && $GATEWAY['private_live_key'] && (!$GATEWAY['testmode'] || $GATEWAY['testmode'] == '')){
-		$secret_key = $GATEWAY['private_live_key'];
-	} elseif($GATEWAY && $GATEWAY['private_test_key'] && $GATEWAY['testmode'] == 'on'){
-		$secret_key = $GATEWAY['private_test_key'];
-	}
-
-	// Set API key
-	Stripe::setApiKey($secret_key);
-	
-	// Description (THIS FORMAT IS REQUIRED!!!!)
-	$description = "Invoice #" . $invoiceID . " - " . $_POST['stripeEmail'] . "";
-
-	$customer = sprintf('Customer for Invoice #%d', $invoiceID);
-	$email = '';
-	if($GATEWAY['clientdetails']){
-		$email = $GATEWAY['clientdetails']['email'];
-		$customer = sprintf('%s <%s>', $GATEWAY['clientdetails']['fullname'], $email);
-	}
-
-	// Create a customer, then Do the charge
-	try {
-		$createCustomer = Stripe_Customer::create(array(
-			"description" => $customer,
-			"email" => $email,
-			"card" => $_POST['stripeToken']
-			)); 
-		
-		$customerResponse = json_decode($createCustomer, true);
-
-		$cardCharge = Stripe_Charge::create(array(
-					"customer" => $customerResponse['id'],
-					"amount" => $amountPence,
-					"currency" => $currency,
-					"description" => $description));
-
-		// Great! It was a glowing success! Now, let's add the charge to the invoice and be done with it!
-		$cardResponse = json_decode($cardCharge, true);
-
-		$cardType = '';
-		$cardLastFour = '';
-		if($cardResponse && $cardResponse['card']){
-			if($cardResponse['card']['brand']){
-				$cardType = $cardResponse['card']['brand'];
-			}
-
-			if($cardResponse['card']['last4']){
-				$cardLastFour = $cardResponse['card']['last4'];
-			}
-		}
-
-		if($GATEWAY['clientdetails'] && $GATEWAY['clientdetails']['userid']){
-			$userid = $GATEWAY['clientdetails']['userid'];
-
-			// WHMCS needs a token that can be use for further charges
-			// for Stripe, we store a customer id and use this as token for further charges
-			$storeCardToken = array(
-					"cardtype" => $cardType,
-					"cardnum" => '',
-					"gatewayid" =>$customerResponse['id'],
-					"cardlastfour" => $cardLastFour
-					);
-
-			update_query("tblclients", $storeCardToken, array("id" => $userid));
-		}
-
-	} catch(Stripe_CardError $event) {
-
-		// The card has been declined
-		logTransaction($GATEWAY["name"],$event,"Unsuccessful"); # Save to Gateway Log: name, data array, status
-		header("Location: ".$GATEWAY["systemurl"]."/viewinvoice.php?id=" . $_GET['invoiceid'] . "&paymentstatus=failure");
-
-		die();
-	} catch(Exception $event) {
-		logTransaction($GATEWAY["name"],$event,"Unsuccessful"); # Save to Gateway Log: name, data array, status
-		header("Location: ".$GATEWAY["systemurl"]."/viewinvoice.php?id=" . $_GET['invoiceid'] . "&paymentstatus=failure");
-
-		die();
-	}
-
-	// Mark as paid on WHMCS 
-	addInvoicePayment($invoiceID,$cardResponse['id'],$amountPounds,$fee,$gatewaymodule); # Apply Payment to Invoice: invoiceid, transactionid, amount paid, fees, modulename
-	logTransaction("Stripe",$cardResponse,"Successful");
-
-	// Aaaand redirect back to the invoice
-	header("Location: ".$GATEWAY["systemurl"]."/viewinvoice.php?id=" . $_GET['invoiceid'] . "&paymentstatus=success");
+    // Redirect to invoice
+    header("Location: ".$GATEWAY["systemurl"]."/viewinvoice.php?id={$invoiceID}&paymentstatus=success");
+    exit();
 ?>
