@@ -44,10 +44,13 @@ function stripe_link($params) {
                 data-key="'.$publicKey.'"
                 data-image="'.$params['company_logo'].'"
                 data-name="'.$params['companyname'].'"
-                data-description="Invoice #' . $params['invoiceid'] . '"
+                data-description="'.$description.'"
                 data-amount='.$amountCents.'
                 data-email="' . $params['clientdetails']['email'] . '"
-                data-currency="'. $params['currency'].'">
+                data-currency="'. $params['currency'].'"
+                data-allow-remember-me="false"
+                data-zip-code="true"
+                >
               </script>
             </form>
     ';
