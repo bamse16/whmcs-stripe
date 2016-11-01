@@ -69,9 +69,15 @@ function stripeapplepay_link($params) {
     background-image: -webkit-named-image(apple-pay-logo-white);
 }
 
+#no-apple-pay {
+    display: none;
+    width: 250px;
+}
+
 </style>
 
 <button type="button" id="apple-pay-button" class="pay-button">&nbsp;</button>
+<span id="no-apple-pay" class="pay-button">Apple Pay Not Available!</span>
 <script src="/assets/js/jquery.min.js"></script>
 <script type="text/javascript" src="https://js.stripe.com/v2/"></script>
 <script type="text/javascript">
@@ -79,6 +85,8 @@ Stripe.setPublishableKey('{$publicKey}');
 Stripe.applePay.checkAvailability(function(available) {
     if (available) {
         document.getElementById('apple-pay-button').style.display = 'inline-block';
+    } else {
+        document.getElementById('no-apple-pay').style.display = 'inline-block';
     }
 });
 document.getElementById('apple-pay-button').addEventListener('click', beginApplePay);
