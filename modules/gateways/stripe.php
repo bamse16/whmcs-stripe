@@ -22,8 +22,6 @@ function stripe_config() {
 }
 
 function stripe_link($params) {	
-    //error_log(__FILE__ . " stripe_link. ");
-
     # Invoice Variables
     $invoiceid = (int) $params['invoiceid'];
     $description = $params["description"];
@@ -91,7 +89,6 @@ function stripe_refund($params) {
 }
 
 function stripe_capture($params){
-	error_log(__FILE__." ".__FUNCTION__);
     require_once(ROOTDIR.'/stripe/init.php');
 
     $secret_key = $params['private_live_key'];
