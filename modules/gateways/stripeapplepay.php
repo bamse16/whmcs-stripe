@@ -15,7 +15,7 @@ function stripeapplepay_MetaData() {
 function stripeapplepay_config() {
     $configarray = array(
      "FriendlyName" => array("Type" => "System", "Value"=>"Apple Pay"),
-     
+
      // Same order as on Stripe > Dashboard > Config > API Keys
       "private_test_key" => array("FriendlyName" => "Test Secret Key", "Type" => "text", "Size" => "20", "Description" => "Available from Stripe's website at <a href='https://manage.stripe.com/account/apikeys' title='Stripe API Keys'>this link</a>." , ),
      "public_test_key" => array("FriendlyName" => "Test Publishable Key", "Type" => "text", "Size" => "20", "Description" => "Available from Stripe's website at <a href='https://manage.stripe.com/account/apikeys' title='Stripe API Keys'>this link</a>.", ),
@@ -34,7 +34,7 @@ function stripeapplepay_link($params) {
     if($params['testmode'] == 'on'){
         $publicKey = $params['public_test_key'];
     }
-    
+
     $companyName = $params['companyname'];
     $companyLogo = $params['company_logo'];
     $amount = $params['amount']; // Apple pay uses Amount
@@ -49,7 +49,7 @@ function stripeapplepay_link($params) {
 
 	$htmlOutput = <<<EOD
 
-<style>	
+<style>
 .pay-button {
     color: white;
     background-color: black;
@@ -92,14 +92,14 @@ function beginApplePay() {
         }
     };
 
-    var session = Stripe.applePay.buildSession(paymentRequest, 
+    var session = Stripe.applePay.buildSession(paymentRequest,
         function(result, completion) {
             console.log('result', result);
             $.post('{$callbackUrl}', { stripeToken: result.token.id }).done(function(){
                 completion(ApplePaySession.STATUS_SUCCESS);
                 window.location.href = '{$returnUrl}';
             }).fail(function(){
-                completion(ApplePaySession.STATUS_FAILURE);        
+                completion(ApplePaySession.STATUS_FAILURE);
             });
         }, function(error){
             console.log(error.message);
@@ -108,11 +108,11 @@ function beginApplePay() {
 }
 </script>
 EOD;
-	
-    return $htmlOutput;    
+
+    return $htmlOutput;
 }
 
-function stripeapplepay_refund($params) {		
+function stripeapplepay_refund($params) {
     // Bring in Stripe
     require_once(ROOTDIR.'/stripe/init.php');
 
@@ -120,9 +120,9 @@ function stripeapplepay_refund($params) {
     if ($params["testmode"] == "on") {
 	    $secret_key = $params['private_test_key'];
     }
-    
+
     \Stripe\Stripe::setApiKey($secret_key);
-    
+
     # Invoice Variables
     $transid = $params['transid'];
     $amountCents = $params['amount'] * 100;

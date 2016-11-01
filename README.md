@@ -1,37 +1,31 @@
-WHMCS Custom Stripe Payment Gateway
-============
+# WHMCS Stripe Payment Gateway
 
-This is a free and open source Stripe Payment Gateway for WHMCS that supports one time and recurring payments without ever having a credit card number hit your WHMCS server. It's pretty neat!
+This is a free and open source Stripe Payment Gateway for WHMCS that supports one time and recurring payments. It also supports Apple Pay, implemented as a second gateway (Stripe Apple Pay).
 
 ## Overview
 
-This gateway allows the [WHMCS](http://www.whmcs.com) billing system to use [Stripe's](https://www.stripe.com) one time payment gateway capabilities. [Stripe](https://www.stripe.com) provides the unique ability to take a client's credit card information without ever having the client leave your site, but it also allows for credit card data to never get stored in or even pass through your own server, eliminating costly concerns over PCI compliance. This gateway for WHMCS is being released free for anyone, although it should still be considered in beta as there are likely still bugs to work out of it.
+This gateway allows the [WHMCS](http://www.whmcs.com) billing system to use [Stripe's](https://www.stripe.com) payment gateway capabilities. [Stripe](https://www.stripe.com) provides the unique ability to take a client's credit card information without ever having the client leave your site, but it also allows for credit card data to never get stored in or even pass through your own server, eliminating costly concerns over PCI compliance. This gateway for WHMCS is being released free for anyone, although it should still be considered in beta as there are likely still bugs to work out of it.
 
-This module makes use of Stripe Checkout and as such requires the Checkout.js library and doesn't involve and PCI compliance from your side!
+This module makes use of Stripe Checkout and as such requires the Checkout.js, but also uses Stripe PHP's lib for the callback implementation and marking the invoice as paid.
+
+THe module includes a widget that shows you the current balance, when logged in as admin.
 
 ## Instructions For Use
 
-Upload all files as they are in this structure. You will need to change anywhere that says "PUBLIC KEY HERE" or "SECRET KEY HERE" in either modules/gateways/stripe.php and stripe-pay.php
-
-You will need to include the Stripe Checkout JS libraries on viewinvoice.tpl or header.tpl, as long as it is before the javascript code that is executed to show the button
-
-You will need to activate the gateway in WHMCS - that's it!
+Upload all files as they are in this structure. Then login as WHMCS admin and enable the module Stripe and Stripe Apple Pay. Configure each module with your Stripe public and secret keys found [here](https://dashboard.stripe.com/account/apikeys).
 
 ## Warnings and Notices
 
++ This gateway currently only works in English.
 
-+ This gateway currently only works in English with Great British Pound as the currency. To change the currency, consult the Stripe documentation
++ Due to WHMCS' payment gateway limitations, there does not seem to be any way to implement a proper tokenisation payment module, with admin support for attempt capture or cron charges using the gateway token.
 
-+ Currently only supports one-off payments and refunds. We are working to add more features and streamline the current code.
-
-## Planned for next version
-
-+ Not require the Public Key and Secret Key to be set in the PHP files - they should be configured in the WHMCS admin panel
++ Due to the same limitations, the Apple Pay module was implemented as a separate gateway, although the callback implementation is essentially identical to the main module.
 
 ## Credits and Acknowledgements
 
-This module was originally based on NextGenWeb's whmcs-stripe module, however after spending a decent amount of time on it we decided to open source it!
+This module was originally based on NextGenWeb's whmcs-stripe module, however after spending a decent amount of time on it we decided to open source it! Open sourced by [@lukehebb](https://twitter.com/lukehebb) and then upgraded by [@bamse](https://twitter.com/bamse).
 
 ## Support Information
 
-I'm always looking to improve this code, so if you see something that can be changed or if you have an idea for a new feature or any other feedback, send me an email to `support@connexin.co.uk`, or send me a message on Twitter (`@lukefromengland`), and I'll get right back to you. If you decide to use this module in your WHMCS install, send me a message to say hello (and let me know what you think too) and it'll make my day. Thanks!
+This module is provided as is.

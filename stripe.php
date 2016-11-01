@@ -7,7 +7,9 @@
     include("includes/gatewayfunctions.php");
     include("includes/invoicefunctions.php");
 
-    $invoiceID = (int) $_GET['invoice_id'];
+    $invoiceID = (int) $_GET["invoice_id"];
+    $token = trim($_POST["stripeToken"]);
+
     $GATEWAY = getGatewayVariables($gatewaymodule, $invoiceID);
     if (!$GATEWAY["type"]) {
         die("Module Not Activated");
@@ -15,6 +17,11 @@
 
     // This will stop the processing if the invoice id is invalid
     $invoiceID = checkCbInvoiceID($invoiceID, $GATEWAY['name']);
+
+    if ($token == "") {
+        header("Location: ".$GATEWAY["systemurl"]."/viewinvoice.php?id={$invoiceID}&paymentstatus=failure");
+        die("Missing token");
+    }
 
     // Bring in Stripe
     include('stripe/init.php');
@@ -24,13 +31,11 @@
     $currency = $GATEWAY['currency'];
     $amountCents = $amount * 100;
     $fee = 0;
-    
+
     $secretKey = $GATEWAY['private_live_key'];
-    if ($GATEWAY['testmode'] == 'on') {
+    if($GATEWAY['testmode'] == 'on'){
         $secretKey = $GATEWAY['private_test_key'];
     }
-    
-    $token = trim($_POST['stripeToken']);
 
     // Set API key
     \Stripe\Stripe::setApiKey($secretKey);
@@ -47,21 +52,21 @@
 
     // Create a customer, then Do the charge
     try {
-	    $createCustomer = array(
+        $customerItem = array(
             "description" => $customer,
             "email" => $email,
             "source" => $token
         );
-        $customerResponse = \Stripe\Customer::create($createCustomer);
+        $customerResponse = \Stripe\Customer::create($customerItem);
 
-		$cardItem = array(
-	        "customer" => $customerResponse->id,
-	        "amount" => $amountCents,
-	        "currency" => $currency,
-	        "description" => $description
+        $chargeItem = array(
+            "customer" => $customerResponse->id,
+            "amount" => $amountCents,
+            "currency" => $currency,
+            "description" => $description
         );
-        $cardResponse = \Stripe\Charge::create($cardItem);
-        
+        $cardResponse = \Stripe\Charge::create($chargeItem);
+
         // Add the charge to the invoice
         $card = $cardResponse->source;
 
@@ -75,13 +80,21 @@
             // WHMCS needs a token that can be use for further charges
             // for Stripe, we store a customer id and use this as token for further charges
             $storeCardToken = array(
-	            "cardtype" => $cardType,
-	            "gatewayid" => $customerResponse->id,
-	            "cardlastfour" => $cardLastFour,
-	            "expdate" => $cardExp
+                "cardtype" => $cardType,
+                "gatewayid" => $customerResponse->id,
+                "cardlastfour" => $cardLastFour,
+                "expdate" => $cardExp
             );
             update_query("tblclients", $storeCardToken, array("id" => $userid));
         }
+
+        // Mark as paid in WHMCS
+        addInvoicePayment($invoiceID, $cardResponse->id, $amount, $fee, $GATEWAY["name"]);
+        logTransaction($GATEWAY["name"], $cardResponse, "Successful");
+
+        // Redirect to invoice
+        header("Location: ".$GATEWAY["systemurl"]."/viewinvoice.php?id={$invoiceID}&paymentstatus=success");
+        exit();
     } catch(\Stripe\Error\Card $event) {
         // The card has been declined
         logTransaction($GATEWAY["name"], $event, "Unsuccessful");
@@ -89,15 +102,7 @@
         die();
     } catch(Exception $event) {
         logTransaction($GATEWAY["name"], $event, "Unsuccessful");
-        header("Location: ".$GATEWAY["systemurl"]."/viewinvoice.php?id={invoiceID}&paymentstatus=failure");
+        header("Location: ".$GATEWAY["systemurl"]."/viewinvoice.php?id={$invoiceID}&paymentstatus=failure");
         die();
     }
-	
-    // Mark as paid on WHMCS
-    addInvoicePayment($invoiceID, $cardResponse->id, $amount, $fee, $GATEWAY["name"]);
-    logTransaction($GATEWAY["name"], $cardResponse, "Successful");
-
-    // Redirect to invoice
-    header("Location: ".$GATEWAY["systemurl"]."/viewinvoice.php?id={$invoiceID}&paymentstatus=success");
-    exit();
 ?>

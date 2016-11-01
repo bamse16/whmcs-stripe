@@ -17,12 +17,12 @@ function widget_stripe($vars){
             exit;
         }
 
-        $secret_key = $gateway['private_live_key'];
+        $secretKey = $gateway['private_live_key'];
         if ($gateway['testmode'] == "on") {
-	        $secret_key = $gateway['private_test_key'];
+	        $secretKey = $gateway['private_test_key'];
         }
 
-		\Stripe\Stripe::setApiKey($secret_key);
+		\Stripe\Stripe::setApiKey($secretKey);
 
         $balance = Stripe\Balance::retrieve();
 
