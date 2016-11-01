@@ -8,7 +8,7 @@ This gateway allows the [WHMCS](http://www.whmcs.com) billing system to use [Str
 
 This module makes use of Stripe Checkout and as such requires the Checkout.js, but also uses Stripe PHP's lib for the callback implementation and marking the invoice as paid.
 
-THe module includes a widget that shows you the current balance, when logged in as admin.
+The module includes a widget that shows you the current balance, when logged in as admin.
 
 ## Instructions For Use
 

@@ -14,7 +14,7 @@ function stripeapplepay_MetaData() {
 
 function stripeapplepay_config() {
     $configarray = array(
-     "FriendlyName" => array("Type" => "System", "Value"=>"Apple Pay"),
+     "FriendlyName" => array("Type" => "System", "Value"=>"Stripe Apple Pay"),
 
      // Same order as on Stripe > Dashboard > Config > API Keys
       "private_test_key" => array("FriendlyName" => "Test Secret Key", "Type" => "text", "Size" => "20", "Description" => "Available from Stripe's website at <a href='https://manage.stripe.com/account/apikeys' title='Stripe API Keys'>this link</a>." , ),
